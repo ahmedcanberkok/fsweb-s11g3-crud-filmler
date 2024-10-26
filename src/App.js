@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from "react";
 
 import { Route, Switch, Redirect } from "react-router-dom";
+
 import MovieList from './components/MovieList';
 import Movie from './components/Movie';
-
 import MovieHeader from './components/MovieHeader';
-
 import FavoriteMovieList from './components/FavoriteMovieList';
 
 import axios from 'axios';
+import { useHistory } from "react-router-dom/";
+import EditMovieForm from "./components/EditMovieForm";
+import AddMovieForm from "./components/AddMovieForm";
 
-const App = (props) => {
+const App = () => {
+
   const [movies, setMovies] = useState([]);
   const [favoriteMovies, setFavoriteMovies] = useState([]);
+  const history = useHistory();
+  const [darkMode, setDarkMode] = useState(true);
+  
 
   useEffect(() => {
     axios.get('http://localhost:9000/api/movies')
@@ -25,32 +31,52 @@ const App = (props) => {
   }, []);
 
   const deleteMovie = (id) => {
+    axios
+      .delete(`http://localhost:9000/api/movies/${id}`)
+      .then(res => {
+        setMovies(res.data);
+        history.push("/movies");
+      })
   }
 
   const addToFavorites = (movie) => {
-
+    const favMovie = favoriteMovies.find(fav => fav.id === movie.id)
+    if (!favMovie) {
+      setFavoriteMovies([...favoriteMovies, movie])
+    } else {
+      console.log(favoriteMovies)
+    }
+  }
+  const handleDarkModeChange = () => {
+    setDarkMode(!darkMode)
   }
 
   return (
-    <div>
+    <div className={darkMode ? `dark bg-slate-900` : ``}>
       <nav className="bg-zinc-800 px-6 py-3">
         <h1 className="text-xl text-white">HTTP / CRUD Film Projesi</h1>
+        <button onClick={handleDarkModeChange}> Dark Mode Aç/Kapat </button>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-3 pb-4">
+      <div className="max-w-4xl mx-auto px-3 pb-4" >
         <MovieHeader />
         <div className="flex flex-col sm:flex-row gap-4">
           <FavoriteMovieList favoriteMovies={favoriteMovies} />
 
           <Switch>
             <Route path="/movies/edit/:id">
+              <EditMovieForm setMovies={setMovies} />
+            </Route>
+
+            <Route exact path="/movies/add">
+              <AddMovieForm setMovies={setMovies} />
             </Route>
 
             <Route path="/movies/:id">
-              <Movie />
+              <Movie deleteMovie={deleteMovie} addToFavorites={addToFavorites} />
             </Route>
 
-            <Route path="/movies">
+            <Route exact path="/movies">
               <MovieList movies={movies} />
             </Route>
 
@@ -58,6 +84,7 @@ const App = (props) => {
               <Redirect to="/movies" />
             </Route>
           </Switch>
+
         </div>
       </div>
     </div>
@@ -66,4 +93,3 @@ const App = (props) => {
 
 
 export default App;
-
